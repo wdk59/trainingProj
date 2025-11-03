@@ -15,7 +15,7 @@
 AtrainingProjCharacter::AtrainingProjCharacter()
 {
 	// Set size for collision capsule
-	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
+	GetCapsuleComponent()->InitCapsuleSize(35.f, 90.f);
 		
 	// Don't rotate when the controller rotates.
 	// Let that just affect the camera.
@@ -26,7 +26,7 @@ AtrainingProjCharacter::AtrainingProjCharacter()
 	// Configure character movement
 	// Make character to Look at the direction of character movement
 	GetCharacterMovement()->bOrientRotationToMovement = true;
-	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
+	GetCharacterMovement()->RotationRate = FRotator(0.f, 500.f, 0.f);
 
 	// Initialize characterMovement-related variables
 	// These can be tweaked in the Character Blueprint
@@ -35,19 +35,28 @@ AtrainingProjCharacter::AtrainingProjCharacter()
 	GetCharacterMovement()->MaxWalkSpeed = 500.f;
 	GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
-	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
+	GetCharacterMovement()->BrakingDecelerationFalling = 1500.f;
 
 	// Create a camera boom (pulls in towards the player if there is a collision)
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
 	CameraBoom->TargetArmLength = 300.0f;
-	CameraBoom->TargetOffset = FVector(0.f, 30.f, 70.f);
+	CameraBoom->TargetOffset = FVector(0.f, 0.f, 70.f);
 	CameraBoom->bUsePawnControlRotation = true;
 
 	// Create a follow camera
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;	// Camera does not rotate relative to arm (CameraBoom is rotating based on the controller)
+	FollowCamera->SetAutoActivate(true);
+
+	// Create a first person camera
+	FPSCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FPSCamera"));
+	FPSCamera->SetupAttachment(GetMesh(), "head");
+	FPSCamera->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
+	FPSCamera->SetRelativeRotation(FRotator(0.f, 90.f, -90.f));
+	FPSCamera->bUsePawnControlRotation = true;	// Camera always faces the same direction as the character mesh
+	FPSCamera->SetAutoActivate(false);
 
 	// Set Character Mesh
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> PLAYER_MESH_BASIC(TEXT("/Game/Characters/Mannequins/Meshes/SKM_Quinn_Simple.SKM_Quinn_Simple"));
@@ -65,6 +74,10 @@ AtrainingProjCharacter::AtrainingProjCharacter()
 	if (IA_MOVE.Succeeded()) {
 		MoveAction = IA_MOVE.Object;
 	}
+	static ConstructorHelpers::FObjectFinder<UInputAction> IA_SWITCHVIEW(TEXT("/Game/MyContents/Player/Input/Actions/IA_SwitchView.IA_SwitchView"));
+	if (IA_SWITCHVIEW.Succeeded()) {
+		SwitchViewAction = IA_SWITCHVIEW.Object;
+	}
 	static ConstructorHelpers::FObjectFinder<UInputAction> IA_LOOK(TEXT("/Game/MyContents/Player/Input/Actions/IA_Look.IA_Look"));
 	if (IA_LOOK.Succeeded()) {
 		LookAction = IA_LOOK.Object;
@@ -73,6 +86,14 @@ AtrainingProjCharacter::AtrainingProjCharacter()
 	if (IA_MOUSELOOK.Succeeded()) {
 		MouseLookAction = IA_MOUSELOOK.Object;
 	}
+}
+
+void AtrainingProjCharacter::BeginPlay() {
+	Super::BeginPlay();
+
+	// Set Perspection to TPS
+	bIsFPS = false;
+	SwitchView();
 }
 
 void AtrainingProjCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -92,6 +113,9 @@ void AtrainingProjCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AtrainingProjCharacter::Look);
+
+		// Switch View (TPS<->FPS)
+		EnhancedInputComponent->BindAction(SwitchViewAction, ETriggerEvent::Started, this, &AtrainingProjCharacter::SwitchView);
 
 		UE_LOG(LogTemp, Warning, TEXT("EnhancedInputComponent bound actions"));
 	}
@@ -154,6 +178,20 @@ void AtrainingProjCharacter::DoLook(float Yaw, float Pitch)
 		AddControllerYawInput(Yaw);
 		AddControllerPitchInput(Pitch);
 	}
+}
+
+void AtrainingProjCharacter::SwitchView() {
+	if (bIsFPS) {
+		FollowCamera->SetActive(true);
+		FPSCamera->SetActive(false);
+
+	}
+	else {
+		FollowCamera->SetActive(false);
+		FPSCamera->SetActive(true);
+	}
+
+	bIsFPS = !bIsFPS;
 }
 
 void AtrainingProjCharacter::DoJumpStart()

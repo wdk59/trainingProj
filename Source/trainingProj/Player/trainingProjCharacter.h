@@ -30,8 +30,15 @@ class AtrainingProjCharacter : public ACharacter
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components", meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FollowCamera;
+
+	/** First camera */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	UCameraComponent* FPSCamera;
 	
 protected:
+	/** Gameplay initialization */
+	virtual void BeginPlay() override;
+
 	/** Jump Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* JumpAction;
@@ -39,6 +46,10 @@ protected:
 	/** Move Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* MoveAction;
+
+	/** Switch View(Camera) Input Action */
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* SwitchViewAction;
 
 	/** Look Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")
@@ -59,6 +70,11 @@ protected:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void PossessedBy(AController* NewController) override;
 
+private:
+	/** View Status */
+	UPROPERTY(EditAnywhere, Category = "Input")
+	bool bIsFPS = false;
+
 protected:
 
 	/** Called for movement input */
@@ -66,6 +82,9 @@ protected:
 
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
+
+	/** Called for switching view input */
+	void SwitchView();
 
 public:
 
