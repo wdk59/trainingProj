@@ -92,7 +92,9 @@ void AtrainingProjCharacter::BeginPlay() {
 	Super::BeginPlay();
 
 	// Set Perspection to TPS
-	bIsFPS = true;
+	if (bIsFPS) {
+		bIsFPS = false;
+	}
 	SwitchView();
 }
 
