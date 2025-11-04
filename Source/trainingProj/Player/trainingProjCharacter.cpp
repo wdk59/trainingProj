@@ -53,7 +53,7 @@ AtrainingProjCharacter::AtrainingProjCharacter()
 	// Create a first person camera
 	FPSCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FPSCamera"));
 	FPSCamera->SetupAttachment(GetMesh(), "head");
-	FPSCamera->SetRelativeLocation(FVector(0.f, 0.f, 0.f));
+	FPSCamera->SetRelativeLocation(FVector(0.f, 20.f, 0.f));
 	FPSCamera->SetRelativeRotation(FRotator(0.f, 90.f, -90.f));
 	FPSCamera->bUsePawnControlRotation = true;	// Camera always faces the same direction as the character mesh
 	FPSCamera->SetAutoActivate(false);
@@ -92,7 +92,7 @@ void AtrainingProjCharacter::BeginPlay() {
 	Super::BeginPlay();
 
 	// Set Perspection to TPS
-	bIsFPS = false;
+	bIsFPS = true;
 	SwitchView();
 }
 
