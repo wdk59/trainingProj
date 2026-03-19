@@ -40,6 +40,20 @@ protected:
 	/** Gameplay initialization */
 	virtual void BeginPlay() override;
 
+public:
+
+	/** Constructor */
+	AtrainingProjCharacter();
+
+	EPlayerWeaponState CurrentWeapon;
+	EPlayerActionState CurrentAction;
+
+protected:
+	/** Initialize input action bindings */
+	// Called to bind functionality to input
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	virtual void PossessedBy(AController* NewController) override;
+
 	/** Jump Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* JumpAction;
@@ -63,20 +77,6 @@ protected:
 	/** Mouse Look Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* MouseLookAction;
-
-public:
-
-	/** Constructor */
-	AtrainingProjCharacter();
-
-	EPlayerWeaponState CurrentWeapon;
-	EPlayerActionState CurrentAction;
-
-protected:
-	/** Initialize input action bindings */
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	virtual void PossessedBy(AController* NewController) override;
 
 private:
 	/** View Status */

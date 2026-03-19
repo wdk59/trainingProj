@@ -41,7 +41,7 @@ AtrainingProjCharacter::AtrainingProjCharacter()
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
 	CameraBoom->TargetArmLength = 300.0f;
-	CameraBoom->TargetOffset = FVector(0.f, 0.f, 70.f);
+	CameraBoom->SocketOffset = FVector(0.f, 0.f, 70.f);
 	CameraBoom->bUsePawnControlRotation = true;
 
 	// Create a follow camera
@@ -62,7 +62,7 @@ AtrainingProjCharacter::AtrainingProjCharacter()
 	static ConstructorHelpers::FObjectFinder<USkeletalMesh> PLAYER_MESH_BASIC(TEXT("/Game/Characters/Mannequins/Meshes/SKM_Quinn_Simple.SKM_Quinn_Simple"));
 	if (PLAYER_MESH_BASIC.Succeeded()) {
 		GetMesh()->SetSkeletalMesh(PLAYER_MESH_BASIC.Object);
-		GetMesh()->SetWorldLocationAndRotation(FVector(0.f, 0.f, -90.f), FRotator(0.f, -90.f, 0.f));
+		GetMesh()->SetRelativeLocationAndRotation(FVector(0.f, 0.f, -90.f), FRotator(0.f, -90.f, 0.f));
 	}
 
 	// Action Mapping - Input Action
