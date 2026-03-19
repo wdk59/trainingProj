@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
+#include "PlayerEnumGroup.h"
 #include "trainingProjCharacter.generated.h"
 
 class USpringArmComponent;
@@ -51,6 +52,10 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* SwitchViewAction;
 
+	/** Toggle(Equip/Unequip) Weapon Input Action */
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* ToggleWeaponAction;
+
 	/** Look Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")
 	UInputAction* LookAction;
@@ -62,7 +67,10 @@ protected:
 public:
 
 	/** Constructor */
-	AtrainingProjCharacter();	
+	AtrainingProjCharacter();
+
+	EPlayerWeaponState CurrentWeapon;
+	EPlayerActionState CurrentAction;
 
 protected:
 	/** Initialize input action bindings */
@@ -83,8 +91,12 @@ protected:
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 
-	/** Called for switching view input */
+	/** Called for setting view */
+	void SetView(bool curView);
+	/** Called for switching view */
 	void SwitchView();
+	/** Called for equipping or unequipping weapon */
+	void ToggleWeapon();
 
 public:
 
@@ -104,12 +116,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Input")
 	virtual void DoJumpEnd();
 
-public:
-
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 
 	/** Returns FollowCamera subobject **/
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+
+	/** Initialize Character's setting */
+	UFUNCTION(BlueprintCallable, Category = "Init")
+	void Initialize();
 };
 

@@ -20,12 +20,12 @@ AtrainingProjCharacter::AtrainingProjCharacter()
 	// Don't rotate when the controller rotates.
 	// Let that just affect the camera.
 	bUseControllerRotationPitch = false;
-	bUseControllerRotationYaw = false;
+	bUseControllerRotationYaw = true;
 	bUseControllerRotationRoll = false;
 
 	// Configure character movement
 	// Make character to Look at the direction of character movement
-	GetCharacterMovement()->bOrientRotationToMovement = true;
+	GetCharacterMovement()->bOrientRotationToMovement = false;
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 500.f, 0.f);
 
 	// Initialize characterMovement-related variables
@@ -55,7 +55,7 @@ AtrainingProjCharacter::AtrainingProjCharacter()
 	FPSCamera->SetupAttachment(GetMesh(), "head");
 	FPSCamera->SetRelativeLocation(FVector(0.f, 20.f, 0.f));
 	FPSCamera->SetRelativeRotation(FRotator(0.f, 90.f, -90.f));
-	FPSCamera->bUsePawnControlRotation = true;	// Camera always faces the same direction as the character mesh
+	FPSCamera->bUsePawnControlRotation = false;	// Camera always faces the same direction as the character mesh
 	FPSCamera->SetAutoActivate(false);
 
 	// Set Character Mesh
@@ -78,6 +78,10 @@ AtrainingProjCharacter::AtrainingProjCharacter()
 	if (IA_SWITCHVIEW.Succeeded()) {
 		SwitchViewAction = IA_SWITCHVIEW.Object;
 	}
+	static ConstructorHelpers::FObjectFinder<UInputAction> IA_TOGGLEWEAPON(TEXT("/Game/MyContents/Player/Input/Actions/IA_ToggleWeapon.IA_ToggleWeapon"));
+	if (IA_TOGGLEWEAPON.Succeeded()) {
+		ToggleWeaponAction = IA_TOGGLEWEAPON.Object;
+	}
 	static ConstructorHelpers::FObjectFinder<UInputAction> IA_LOOK(TEXT("/Game/MyContents/Player/Input/Actions/IA_Look.IA_Look"));
 	if (IA_LOOK.Succeeded()) {
 		LookAction = IA_LOOK.Object;
@@ -91,11 +95,25 @@ AtrainingProjCharacter::AtrainingProjCharacter()
 void AtrainingProjCharacter::BeginPlay() {
 	Super::BeginPlay();
 
-	// Set Perspection to TPS
-	if (bIsFPS) {
+	// Initialize Character's Setting
+	Initialize();
+}
+
+void AtrainingProjCharacter::Initialize() {
+
+	// Don't rotate when the controller rotates.
+	// Let that just affect the camera.
+	bUseControllerRotationPitch = false;	// un-down
+	bUseControllerRotationYaw = true;		// horizontal
+	bUseControllerRotationRoll = false;		// front-back
+
+	CurrentWeapon = EPlayerWeaponState::NoWeapon;
+	CurrentAction = EPlayerActionState::Neutral;
+
+	// Initialize View to TPS
+	if (bIsFPS)
 		bIsFPS = false;
-	}
-	SwitchView();
+	SetView(bIsFPS);
 }
 
 void AtrainingProjCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -118,6 +136,9 @@ void AtrainingProjCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 
 		// Switch View (TPS<->FPS)
 		EnhancedInputComponent->BindAction(SwitchViewAction, ETriggerEvent::Started, this, &AtrainingProjCharacter::SwitchView);
+
+		// Toggle Weapon (Equip<->Unequip)
+		EnhancedInputComponent->BindAction(ToggleWeaponAction, ETriggerEvent::Started, this, &AtrainingProjCharacter::ToggleWeapon);
 
 		UE_LOG(LogTemp, Warning, TEXT("EnhancedInputComponent bound actions"));
 	}
@@ -182,18 +203,33 @@ void AtrainingProjCharacter::DoLook(float Yaw, float Pitch)
 	}
 }
 
-void AtrainingProjCharacter::SwitchView() {
-	if (bIsFPS) {
-		FollowCamera->SetActive(true);
-		FPSCamera->SetActive(false);
+void AtrainingProjCharacter::SetView(bool curViewFPS) {
+	if (curViewFPS) {
+		FollowCamera->SetActive(false);
+		FPSCamera->SetActive(true);
 
 	}
 	else {
-		FollowCamera->SetActive(false);
-		FPSCamera->SetActive(true);
+		FollowCamera->SetActive(true);
+		FPSCamera->SetActive(false);
 	}
+}
 
+// Switch View: Key V
+void AtrainingProjCharacter::SwitchView() {
 	bIsFPS = !bIsFPS;
+	SetView(bIsFPS);
+}
+
+// Toggle Weapon: Key X
+void AtrainingProjCharacter::ToggleWeapon() {
+	if (CurrentWeapon != EPlayerWeaponState::NoWeapon)
+		CurrentWeapon = EPlayerWeaponState::NoWeapon;
+	else if (CurrentWeapon == EPlayerWeaponState::NoWeapon)
+		CurrentWeapon = EPlayerWeaponState::Rifle;
+
+	if (CurrentAction != EPlayerActionState::Neutral)
+		CurrentAction = EPlayerActionState::Neutral;
 }
 
 void AtrainingProjCharacter::DoJumpStart()
