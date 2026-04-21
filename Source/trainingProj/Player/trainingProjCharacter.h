@@ -37,9 +37,9 @@ class AtrainingProjCharacter : public ACharacter
 	UCameraComponent* FPSCamera;
 
 	/** Weapons */
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category="Weapons")
 	class USkeletalMeshComponent* SniperMesh;
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditAnywhere, Category="Weapons")
 	class UStaticMeshComponent* RifleMesh;
 	
 protected:
@@ -51,8 +51,11 @@ public:
 	/** Constructor */
 	AtrainingProjCharacter();
 
+	UPROPERTY(BlueprintReadOnly, Category = "States")
 	EPlayerWeaponState PastWeapon;
+	UPROPERTY(BlueprintReadOnly, Category = "States")
 	EPlayerWeaponState CurrentWeapon;
+	UPROPERTY(BlueprintReadOnly, Category = "States")
 	EPlayerActionState CurrentAction;
 
 protected:
@@ -99,7 +102,7 @@ protected:
 
 private:
 	/** View Status */
-	UPROPERTY(EditAnywhere, Category = "Input")
+	UPROPERTY(VisibleAnywhere, Category = "Input")
 	bool bIsFPS = false;
 
 protected:
@@ -156,5 +159,18 @@ public:
 	void Initialize();
 	UFUNCTION(BlueprintCallable, Category = "Init")
 	void Initialize_GunSettings();
+	UFUNCTION(BlueprintCallable, Category = "Init")
+	void Initialize_UI();
+
+	UPROPERTY(EditAnywhere, Category="HUD")
+	TSubclassOf<class UUserWidget> CrosshairUIFactory;
+	UPROPERTY(VisibleAnywhere, Category="HUD")
+	class UUserWidget* CrosshairUI;
+
+	UPROPERTY(EditAnywhere, Category = "HUD")
+	TSubclassOf<class UUserWidget> ScopeUIFactory;
+	UPROPERTY(VisibleAnywhere, Category="HUD")
+	class UUserWidget* ScopeUI;
+
 };
 

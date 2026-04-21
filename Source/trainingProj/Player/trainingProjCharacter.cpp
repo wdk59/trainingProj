@@ -10,6 +10,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
+#include "../../../UMG/Public/Blueprint/UserWidget.h"
 #include "trainingProj.h"
 
 AtrainingProjCharacter::AtrainingProjCharacter()
@@ -41,7 +42,7 @@ AtrainingProjCharacter::AtrainingProjCharacter()
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
 	CameraBoom->TargetArmLength = 300.0f;
-	CameraBoom->SocketOffset = FVector(0.f, 0.f, 70.f);
+	CameraBoom->SocketOffset = FVector(0.f, 30.f, 70.f);
 	CameraBoom->bUsePawnControlRotation = true;
 
 	// Create a follow camera
@@ -122,6 +123,8 @@ AtrainingProjCharacter::AtrainingProjCharacter()
 	if (WEAPON_MESH_RIFLE.Succeeded()) {
 		RifleMesh->SetStaticMesh(WEAPON_MESH_RIFLE.Object);
 	}
+
+	// Widget Blueprints
 }
 
 void AtrainingProjCharacter::BeginPlay() {
@@ -142,10 +145,13 @@ void AtrainingProjCharacter::Initialize() {
 	// Initialize Gun Settings
 	Initialize_GunSettings();
 
-	// Initialize View to TPS
+	// Initialize View to TPS= 
 	if (bIsFPS)
 		bIsFPS = false;
 	SetView(bIsFPS);
+
+	// Initialize Player UI
+	Initialize_UI();
 }
 
 void AtrainingProjCharacter::Initialize_GunSettings()
@@ -156,6 +162,17 @@ void AtrainingProjCharacter::Initialize_GunSettings()
 
 	RifleMesh->SetVisibility(false);
 	SniperMesh->SetVisibility(false);
+}
+
+void AtrainingProjCharacter::Initialize_UI()
+{
+	CrosshairUI = CreateWidget(GetWorld(), CrosshairUIFactory);
+	CrosshairUI->AddToViewport();
+	CrosshairUI->SetVisibility(ESlateVisibility::Hidden);
+
+	ScopeUI = CreateWidget(GetWorld(), ScopeUIFactory);
+	ScopeUI->AddToViewport();
+	ScopeUI->SetVisibility(ESlateVisibility::Hidden);
 }
 
 void AtrainingProjCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -296,10 +313,15 @@ void AtrainingProjCharacter::SetWeaponVisibility(const EPlayerWeaponState weapon
 void AtrainingProjCharacter::ToggleWeapon() {
 	// Equip or Unequip
 	if (CurrentWeapon != EPlayerWeaponState::NoWeapon) {
+		// Unequip Weapon
 		PastWeapon = CurrentWeapon;
 		CurrentWeapon = EPlayerWeaponState::NoWeapon;
+		// Hide Crosshair and Scope UI
+		CrosshairUI->SetVisibility(ESlateVisibility::Hidden);
+		ScopeUI->SetVisibility(ESlateVisibility::Hidden);
 	}
 	else if (CurrentWeapon == EPlayerWeaponState::NoWeapon) {
+		// Equip Weapon
 		if (PastWeapon != EPlayerWeaponState::NoWeapon) {
 			CurrentWeapon = PastWeapon;
 		}
@@ -318,6 +340,10 @@ void AtrainingProjCharacter::OnChooseRifle(const FInputActionValue& Value)
 {
 	CurrentWeapon = EPlayerWeaponState::Rifle;
 	SetWeaponVisibility(CurrentWeapon);
+	
+	// Show Crosshair
+	CrosshairUI->SetVisibility(ESlateVisibility::Visible);
+	ScopeUI->SetVisibility(ESlateVisibility::Hidden);
 }
 
 // Equip Sniper: Key 2
@@ -325,21 +351,48 @@ void AtrainingProjCharacter::OnChooseSniper(const FInputActionValue& Value)
 {
 	CurrentWeapon = EPlayerWeaponState::Sniper;
 	SetWeaponVisibility(CurrentWeapon);
+
+	// Show Crosshair
+	CrosshairUI->SetVisibility(ESlateVisibility::Visible);
+	ScopeUI->SetVisibility(ESlateVisibility::Hidden);
 }
 
 // Fire Equiped Gun: Click Left Mouse Button
 void AtrainingProjCharacter::OnGunFire(const FInputActionValue& Value)
 {
+
 }
 
 // Use Scope of Equiped Gun: Click Right Mouse Button
 void AtrainingProjCharacter::OnGunZoomIn(const FInputActionValue& Value)
 {
+	if (CurrentWeapon == EPlayerWeaponState::NoWeapon)
+		return;
+
+	// Hide Crosshair and Show Scope
+	CrosshairUI->SetVisibility(ESlateVisibility::Hidden);
+	ScopeUI->SetVisibility(ESlateVisibility::Visible);
+
+	if (!bIsFPS)
+		SetView(true);	// change camera to FPS when current view is TPS
+
+	FPSCamera->FieldOfView = 25.f;
 }
 
 // Disuse Scope of Equiped Gun: Release Right Mouse Button
 void AtrainingProjCharacter::OnGunZoomOut(const FInputActionValue& Value)
 {
+	if (CurrentWeapon == EPlayerWeaponState::NoWeapon)
+		return;
+
+	// Show Crosshair and Hide Scope
+	CrosshairUI->SetVisibility(ESlateVisibility::Visible);
+	ScopeUI->SetVisibility(ESlateVisibility::Hidden);
+
+	if (!bIsFPS)	// change camera to TPS when current view is TPS
+		SetView(false);
+
+	FPSCamera->FieldOfView = 90.f;
 }
 
 void AtrainingProjCharacter::DoJumpStart()
