@@ -82,3 +82,6 @@ Content/ThirdPerson/*
 Content/Variant_Combat/*
 Content/Variant_Platforming/*
 Content/Variant_SideScrolling/*
+
+# Assets
+Content/External_Assets/*

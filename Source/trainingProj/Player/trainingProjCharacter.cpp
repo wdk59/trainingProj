@@ -53,9 +53,9 @@ AtrainingProjCharacter::AtrainingProjCharacter()
 	// Create a first person camera
 	FPSCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FPSCamera"));
 	FPSCamera->SetupAttachment(GetMesh(), "head");
-	FPSCamera->SetRelativeLocation(FVector(0.f, 20.f, 0.f));
-	FPSCamera->SetRelativeRotation(FRotator(0.f, 90.f, -90.f));
-	FPSCamera->bUsePawnControlRotation = false;	// Camera always faces the same direction as the character mesh
+	FPSCamera->SetRelativeLocation(FVector(0.f, 20.f, 160.f));
+	FPSCamera->SetRelativeRotation(FRotator(0.f, 90.f, 0.f));
+	FPSCamera->bUsePawnControlRotation = true;	// false: Camera always faces the same direction as the character mesh
 	FPSCamera->SetAutoActivate(false);
 
 	// Set Character Mesh
@@ -68,27 +68,59 @@ AtrainingProjCharacter::AtrainingProjCharacter()
 	// Action Mapping - Input Action
 	static ConstructorHelpers::FObjectFinder<UInputAction> IA_JUMP(TEXT("/Game/MyContents/Player/Input/Actions/IA_Jump.IA_Jump"));
 	if (IA_JUMP.Succeeded()) {
-		JumpAction = IA_JUMP.Object;
+		IA_Jump = IA_JUMP.Object;
 	}
 	static ConstructorHelpers::FObjectFinder<UInputAction> IA_MOVE(TEXT("/Game/MyContents/Player/Input/Actions/IA_Move.IA_Move"));
 	if (IA_MOVE.Succeeded()) {
-		MoveAction = IA_MOVE.Object;
+		IA_Move = IA_MOVE.Object;
 	}
 	static ConstructorHelpers::FObjectFinder<UInputAction> IA_SWITCHVIEW(TEXT("/Game/MyContents/Player/Input/Actions/IA_SwitchView.IA_SwitchView"));
 	if (IA_SWITCHVIEW.Succeeded()) {
-		SwitchViewAction = IA_SWITCHVIEW.Object;
+		IA_SwitchView = IA_SWITCHVIEW.Object;
 	}
-	static ConstructorHelpers::FObjectFinder<UInputAction> IA_TOGGLEWEAPON(TEXT("/Game/MyContents/Player/Input/Actions/IA_ToggleWeapon.IA_ToggleWeapon"));
+	static ConstructorHelpers::FObjectFinder<UInputAction> IA_TOGGLEWEAPON(TEXT("InputAction'/Game/MyContents/Player/Input/Actions/IA_Weapon/IA_ToggleWeapon.IA_ToggleWeapon'"));
 	if (IA_TOGGLEWEAPON.Succeeded()) {
-		ToggleWeaponAction = IA_TOGGLEWEAPON.Object;
+		IA_ToggleWeapon = IA_TOGGLEWEAPON.Object;
 	}
 	static ConstructorHelpers::FObjectFinder<UInputAction> IA_LOOK(TEXT("/Game/MyContents/Player/Input/Actions/IA_Look.IA_Look"));
 	if (IA_LOOK.Succeeded()) {
-		LookAction = IA_LOOK.Object;
+		IA_Look = IA_LOOK.Object;
 	}
 	static ConstructorHelpers::FObjectFinder<UInputAction> IA_MOUSELOOK(TEXT("/Game/MyContents/Player/Input/Actions/IA_MouseLook.IA_MouseLook"));
 	if (IA_MOUSELOOK.Succeeded()) {
-		MouseLookAction = IA_MOUSELOOK.Object;
+		IA_MouseLook = IA_MOUSELOOK.Object;
+	}
+	static ConstructorHelpers::FObjectFinder<UInputAction> IA_CHOOSERIFLE(TEXT("InputAction'/Game/MyContents/Player/Input/Actions/IA_Weapon/IA_ChooseRifle.IA_ChooseRifle'"));
+	if (IA_CHOOSERIFLE.Succeeded()) {
+		IA_ChooseRifle = IA_CHOOSERIFLE.Object;
+	}
+	static ConstructorHelpers::FObjectFinder<UInputAction> IA_CHOOSESNIPER(TEXT("InputAction'/Game/MyContents/Player/Input/Actions/IA_Weapon/IA_ChooseSniper.IA_ChooseSniper'"));
+	if (IA_CHOOSESNIPER.Succeeded()) {
+		IA_ChooseSniper = IA_CHOOSESNIPER.Object;
+	}
+	static ConstructorHelpers::FObjectFinder<UInputAction> IA_GUNFIRE(TEXT("InputAction'/Game/MyContents/Player/Input/Actions/IA_Weapon/IA_GunFire.IA_GunFire'"));
+	if (IA_GUNFIRE.Succeeded()) {
+		IA_GunFire = IA_GUNFIRE.Object;
+	}
+	static ConstructorHelpers::FObjectFinder<UInputAction> IA_GUNZOOM(TEXT("InputAction'/Game/MyContents/Player/Input/Actions/IA_Weapon/IA_GunZoom.IA_GunZoom'"));
+	if (IA_GUNZOOM.Succeeded()) {
+		IA_GunZoom = IA_GUNZOOM.Object;
+	}
+
+	// Create and Set Weapon Object - Attach to Character Mesh
+	SniperMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SniperMesh"));
+	SniperMesh->SetupAttachment(GetMesh());
+	SniperMesh->SetCollisionProfileName(TEXT("NoCollision"));
+	static ConstructorHelpers::FObjectFinder<USkeletalMesh> WEAPON_MESH_SNIPER(TEXT("SkeletalMesh'/Game/MyContents/Weapons/Models/SKM_Weapon_Sniper.SKM_Weapon_Sniper'"));
+	if (WEAPON_MESH_SNIPER.Succeeded()) {
+		SniperMesh->SetSkeletalMesh(WEAPON_MESH_SNIPER.Object);
+	}
+	RifleMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RifleMesh"));
+	RifleMesh->SetupAttachment(GetMesh());
+	RifleMesh->SetCollisionProfileName(TEXT("NoCollision"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> WEAPON_MESH_RIFLE(TEXT("StaticMesh'/Game/MyContents/Weapons/Models/SM_Weapon_Rifle.SM_Weapon_Rifle'"));
+	if (WEAPON_MESH_RIFLE.Succeeded()) {
+		RifleMesh->SetStaticMesh(WEAPON_MESH_RIFLE.Object);
 	}
 }
 
@@ -107,13 +139,23 @@ void AtrainingProjCharacter::Initialize() {
 	bUseControllerRotationYaw = true;		// horizontal
 	bUseControllerRotationRoll = false;		// front-back
 
-	CurrentWeapon = EPlayerWeaponState::NoWeapon;
-	CurrentAction = EPlayerActionState::Neutral;
+	// Initialize Gun Settings
+	Initialize_GunSettings();
 
 	// Initialize View to TPS
 	if (bIsFPS)
 		bIsFPS = false;
 	SetView(bIsFPS);
+}
+
+void AtrainingProjCharacter::Initialize_GunSettings()
+{
+	PastWeapon = EPlayerWeaponState::NoWeapon;
+	CurrentWeapon = EPlayerWeaponState::NoWeapon;
+	CurrentAction = EPlayerActionState::Neutral;
+
+	RifleMesh->SetVisibility(false);
+	SniperMesh->SetVisibility(false);
 }
 
 void AtrainingProjCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -124,21 +166,34 @@ void AtrainingProjCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
 		
 		// Jumping
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
-		//EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+		EnhancedInputComponent->BindAction(IA_Jump, ETriggerEvent::Started, this, &ACharacter::Jump);
+		//EnhancedInputComponent->BindAction(IA_Jump, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 
 		// Moving
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AtrainingProjCharacter::Move);
-		EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &AtrainingProjCharacter::Look);
+		EnhancedInputComponent->BindAction(IA_Move, ETriggerEvent::Triggered, this, &AtrainingProjCharacter::Move);
+		EnhancedInputComponent->BindAction(IA_MouseLook, ETriggerEvent::Triggered, this, &AtrainingProjCharacter::Look);
 
 		// Looking
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AtrainingProjCharacter::Look);
+		EnhancedInputComponent->BindAction(IA_Look, ETriggerEvent::Triggered, this, &AtrainingProjCharacter::Look);
 
 		// Switch View (TPS<->FPS)
-		EnhancedInputComponent->BindAction(SwitchViewAction, ETriggerEvent::Started, this, &AtrainingProjCharacter::SwitchView);
+		EnhancedInputComponent->BindAction(IA_SwitchView, ETriggerEvent::Started, this, &AtrainingProjCharacter::SwitchView);
 
 		// Toggle Weapon (Equip<->Unequip)
-		EnhancedInputComponent->BindAction(ToggleWeaponAction, ETriggerEvent::Started, this, &AtrainingProjCharacter::ToggleWeapon);
+		EnhancedInputComponent->BindAction(IA_ToggleWeapon, ETriggerEvent::Started, this, &AtrainingProjCharacter::ToggleWeapon);
+
+		// Choose Rifle
+		EnhancedInputComponent->BindAction(IA_ChooseRifle, ETriggerEvent::Started, this, &AtrainingProjCharacter::OnChooseRifle);
+
+		// Choose Sniper
+		EnhancedInputComponent->BindAction(IA_ChooseSniper, ETriggerEvent::Started, this, &AtrainingProjCharacter::OnChooseSniper);
+
+		// Gun Fire
+		EnhancedInputComponent->BindAction(IA_GunFire, ETriggerEvent::Started, this, &AtrainingProjCharacter::OnGunFire);
+
+		// Sniper Zoom
+		EnhancedInputComponent->BindAction(IA_GunZoom, ETriggerEvent::Started, this, &AtrainingProjCharacter::OnGunZoomIn);		// On RMB Clicked
+		EnhancedInputComponent->BindAction(IA_GunZoom, ETriggerEvent::Completed, this, &AtrainingProjCharacter::OnGunZoomOut);	// On RMB Released
 
 		UE_LOG(LogTemp, Warning, TEXT("EnhancedInputComponent bound actions"));
 	}
@@ -221,15 +276,70 @@ void AtrainingProjCharacter::SwitchView() {
 	SetView(bIsFPS);
 }
 
+// Set Weapon Visibility
+void AtrainingProjCharacter::SetWeaponVisibility(const EPlayerWeaponState weapon) {
+	if (weapon == EPlayerWeaponState::Rifle) {
+		SniperMesh->SetVisibility(false);
+		RifleMesh->SetVisibility(true);
+	} else if (weapon == EPlayerWeaponState::Sniper) {
+		RifleMesh->SetVisibility(false);
+		SniperMesh->SetVisibility(true);
+	}
+	else {
+		// No Weapon
+		RifleMesh->SetVisibility(false);
+		SniperMesh->SetVisibility(false);
+	}
+}
+
 // Toggle Weapon: Key X
 void AtrainingProjCharacter::ToggleWeapon() {
-	if (CurrentWeapon != EPlayerWeaponState::NoWeapon)
+	// Equip or Unequip
+	if (CurrentWeapon != EPlayerWeaponState::NoWeapon) {
+		PastWeapon = CurrentWeapon;
 		CurrentWeapon = EPlayerWeaponState::NoWeapon;
-	else if (CurrentWeapon == EPlayerWeaponState::NoWeapon)
-		CurrentWeapon = EPlayerWeaponState::Rifle;
+	}
+	else if (CurrentWeapon == EPlayerWeaponState::NoWeapon) {
+		if (PastWeapon != EPlayerWeaponState::NoWeapon) {
+			CurrentWeapon = PastWeapon;
+		}
+		else {
+			CurrentWeapon = EPlayerWeaponState::Rifle;
+		}
+	}
+	SetWeaponVisibility(CurrentWeapon);
 
 	if (CurrentAction != EPlayerActionState::Neutral)
 		CurrentAction = EPlayerActionState::Neutral;
+}
+
+// Equip Rifle: Key 1
+void AtrainingProjCharacter::OnChooseRifle(const FInputActionValue& Value)
+{
+	CurrentWeapon = EPlayerWeaponState::Rifle;
+	SetWeaponVisibility(CurrentWeapon);
+}
+
+// Equip Sniper: Key 2
+void AtrainingProjCharacter::OnChooseSniper(const FInputActionValue& Value)
+{
+	CurrentWeapon = EPlayerWeaponState::Sniper;
+	SetWeaponVisibility(CurrentWeapon);
+}
+
+// Fire Equiped Gun: Click Left Mouse Button
+void AtrainingProjCharacter::OnGunFire(const FInputActionValue& Value)
+{
+}
+
+// Use Scope of Equiped Gun: Click Right Mouse Button
+void AtrainingProjCharacter::OnGunZoomIn(const FInputActionValue& Value)
+{
+}
+
+// Disuse Scope of Equiped Gun: Release Right Mouse Button
+void AtrainingProjCharacter::OnGunZoomOut(const FInputActionValue& Value)
+{
 }
 
 void AtrainingProjCharacter::DoJumpStart()

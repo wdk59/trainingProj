@@ -8,7 +8,8 @@ UENUM(BlueprintType)
 enum class EPlayerWeaponState : uint8 {
 	NoWeapon UMETA(DisplayName = "No Weapon"),
 	Pistol UMETA(DisplayName = "Pistol"),
-	Rifle UMETA(DisplayName = "Rifle")
+	Rifle UMETA(DisplayName = "Rifle"),
+	Sniper UMETA(DisplayName = "Sniper")
 };
 
 UENUM(BlueprintType)

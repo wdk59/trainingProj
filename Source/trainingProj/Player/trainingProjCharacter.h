@@ -35,6 +35,12 @@ class AtrainingProjCharacter : public ACharacter
 	/** First camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FPSCamera;
+
+	/** Weapons */
+	UPROPERTY(EditAnywhere)
+	class USkeletalMeshComponent* SniperMesh;
+	UPROPERTY(EditAnywhere)
+	class UStaticMeshComponent* RifleMesh;
 	
 protected:
 	/** Gameplay initialization */
@@ -45,6 +51,7 @@ public:
 	/** Constructor */
 	AtrainingProjCharacter();
 
+	EPlayerWeaponState PastWeapon;
 	EPlayerWeaponState CurrentWeapon;
 	EPlayerActionState CurrentAction;
 
@@ -56,27 +63,39 @@ protected:
 
 	/** Jump Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")
-	UInputAction* JumpAction;
+	UInputAction* IA_Jump;
 
 	/** Move Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")
-	UInputAction* MoveAction;
+	UInputAction* IA_Move;
 
 	/** Switch View(Camera) Input Action */
 	UPROPERTY(EditAnywhere, Category = "Input")
-	UInputAction* SwitchViewAction;
+	UInputAction* IA_SwitchView;
 
 	/** Toggle(Equip/Unequip) Weapon Input Action */
 	UPROPERTY(EditAnywhere, Category = "Input")
-	UInputAction* ToggleWeaponAction;
+	UInputAction* IA_ToggleWeapon;
 
 	/** Look Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")
-	UInputAction* LookAction;
+	UInputAction* IA_Look;
 
 	/** Mouse Look Input Action */
 	UPROPERTY(EditAnywhere, Category="Input")
-	UInputAction* MouseLookAction;
+	UInputAction* IA_MouseLook;
+
+	/** Choose Gun */
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* IA_ChooseRifle;
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* IA_ChooseSniper;
+
+	/** Gun Features */
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* IA_GunFire;
+	UPROPERTY(EditAnywhere, Category = "Input")
+	UInputAction* IA_GunZoom;
 
 private:
 	/** View Status */
@@ -97,6 +116,16 @@ protected:
 	void SwitchView();
 	/** Called for equipping or unequipping weapon */
 	void ToggleWeapon();
+
+	/** IA: Choose Gun */
+	void OnChooseRifle(const FInputActionValue& Value);
+	void OnChooseSniper(const FInputActionValue& Value);
+	/** IA: Gun Features */
+	void OnGunFire(const FInputActionValue& Value);
+	void OnGunZoomIn(const FInputActionValue& Value);
+	void OnGunZoomOut(const FInputActionValue& Value);
+
+	void SetWeaponVisibility(const EPlayerWeaponState weapon);
 
 public:
 
@@ -125,5 +154,7 @@ public:
 	/** Initialize Character's setting */
 	UFUNCTION(BlueprintCallable, Category = "Init")
 	void Initialize();
+	UFUNCTION(BlueprintCallable, Category = "Init")
+	void Initialize_GunSettings();
 };
 
