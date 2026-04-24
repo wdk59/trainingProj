@@ -38,9 +38,19 @@ class AtrainingProjCharacter : public ACharacter
 
 	/** Weapons */
 	UPROPERTY(EditAnywhere, Category="Weapons")
-	class USkeletalMeshComponent* SniperMesh;
+	class UStaticMeshComponent* SniperMesh;
 	UPROPERTY(EditAnywhere, Category="Weapons")
 	class UStaticMeshComponent* RifleMesh;
+
+	/** Bullet Factory */
+	UPROPERTY(EditAnywhere, Category="Weapons")
+	TSubclassOf<class ABulletActor> RifleBulletFactory;
+	UPROPERTY(EditAnywhere, Category = "Weapons")
+	TSubclassOf<class ABulletActor> SniperBulletFactory;
+
+	/** Weapons VFX */
+	UPROPERTY(EditAnywhere, Category = "Weapons")
+	class UParticleSystem* ExplosionVFXFactory;
 	
 protected:
 	/** Gameplay initialization */
@@ -96,7 +106,7 @@ protected:
 
 	/** Gun Features */
 	UPROPERTY(EditAnywhere, Category = "Input")
-	UInputAction* IA_GunFire;
+	UInputAction* IA_Fire;
 	UPROPERTY(EditAnywhere, Category = "Input")
 	UInputAction* IA_GunZoom;
 
@@ -124,7 +134,7 @@ protected:
 	void OnChooseRifle(const FInputActionValue& Value);
 	void OnChooseSniper(const FInputActionValue& Value);
 	/** IA: Gun Features */
-	void OnGunFire(const FInputActionValue& Value);
+	void OnFire(const FInputActionValue& Value);
 	void OnGunZoomIn(const FInputActionValue& Value);
 	void OnGunZoomOut(const FInputActionValue& Value);
 

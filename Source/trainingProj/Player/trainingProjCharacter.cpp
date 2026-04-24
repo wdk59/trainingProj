@@ -11,6 +11,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "../../../UMG/Public/Blueprint/UserWidget.h"
+#include "../Weapon/BulletActor.h"
 #include "trainingProj.h"
 
 AtrainingProjCharacter::AtrainingProjCharacter()
@@ -99,9 +100,9 @@ AtrainingProjCharacter::AtrainingProjCharacter()
 	if (IA_CHOOSESNIPER.Succeeded()) {
 		IA_ChooseSniper = IA_CHOOSESNIPER.Object;
 	}
-	static ConstructorHelpers::FObjectFinder<UInputAction> IA_GUNFIRE(TEXT("InputAction'/Game/MyContents/Player/Input/Actions/IA_Weapon/IA_GunFire.IA_GunFire'"));
-	if (IA_GUNFIRE.Succeeded()) {
-		IA_GunFire = IA_GUNFIRE.Object;
+	static ConstructorHelpers::FObjectFinder<UInputAction> IA_FIRE(TEXT("InputAction'/Game/MyContents/Player/Input/Actions/IA_Weapon/IA_Fire.IA_Fire'"));
+	if (IA_FIRE.Succeeded()) {
+		IA_Fire = IA_FIRE.Object;
 	}
 	static ConstructorHelpers::FObjectFinder<UInputAction> IA_GUNZOOM(TEXT("InputAction'/Game/MyContents/Player/Input/Actions/IA_Weapon/IA_GunZoom.IA_GunZoom'"));
 	if (IA_GUNZOOM.Succeeded()) {
@@ -109,12 +110,12 @@ AtrainingProjCharacter::AtrainingProjCharacter()
 	}
 
 	// Create and Set Weapon Object - Attach to Character Mesh
-	SniperMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("SniperMesh"));
+	SniperMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SniperMesh"));
 	SniperMesh->SetupAttachment(GetMesh());
 	SniperMesh->SetCollisionProfileName(TEXT("NoCollision"));
-	static ConstructorHelpers::FObjectFinder<USkeletalMesh> WEAPON_MESH_SNIPER(TEXT("SkeletalMesh'/Game/MyContents/Weapons/Models/SKM_Weapon_Sniper.SKM_Weapon_Sniper'"));
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> WEAPON_MESH_SNIPER(TEXT("StaticMesh'/Game/MyContents/Weapons/Models/SM_Weapon_Sniper.SM_Weapon_Sniper'"));
 	if (WEAPON_MESH_SNIPER.Succeeded()) {
-		SniperMesh->SetSkeletalMesh(WEAPON_MESH_SNIPER.Object);
+		SniperMesh->SetStaticMesh(WEAPON_MESH_SNIPER.Object);
 	}
 	RifleMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RifleMesh"));
 	RifleMesh->SetupAttachment(GetMesh());
@@ -123,8 +124,6 @@ AtrainingProjCharacter::AtrainingProjCharacter()
 	if (WEAPON_MESH_RIFLE.Succeeded()) {
 		RifleMesh->SetStaticMesh(WEAPON_MESH_RIFLE.Object);
 	}
-
-	// Widget Blueprints
 }
 
 void AtrainingProjCharacter::BeginPlay() {
@@ -145,7 +144,7 @@ void AtrainingProjCharacter::Initialize() {
 	// Initialize Gun Settings
 	Initialize_GunSettings();
 
-	// Initialize View to TPS= 
+	// Initialize View to TPS
 	if (bIsFPS)
 		bIsFPS = false;
 	SetView(bIsFPS);
@@ -206,7 +205,7 @@ void AtrainingProjCharacter::SetupPlayerInputComponent(UInputComponent* PlayerIn
 		EnhancedInputComponent->BindAction(IA_ChooseSniper, ETriggerEvent::Started, this, &AtrainingProjCharacter::OnChooseSniper);
 
 		// Gun Fire
-		EnhancedInputComponent->BindAction(IA_GunFire, ETriggerEvent::Started, this, &AtrainingProjCharacter::OnGunFire);
+		EnhancedInputComponent->BindAction(IA_Fire, ETriggerEvent::Started, this, &AtrainingProjCharacter::OnFire);
 
 		// Sniper Zoom
 		EnhancedInputComponent->BindAction(IA_GunZoom, ETriggerEvent::Started, this, &AtrainingProjCharacter::OnGunZoomIn);		// On RMB Clicked
@@ -358,9 +357,19 @@ void AtrainingProjCharacter::OnChooseSniper(const FInputActionValue& Value)
 }
 
 // Fire Equiped Gun: Click Left Mouse Button
-void AtrainingProjCharacter::OnGunFire(const FInputActionValue& Value)
+void AtrainingProjCharacter::OnFire(const FInputActionValue& Value)
 {
-
+	if (CurrentWeapon == EPlayerWeaponState::Rifle) {
+		FTransform firePos = RifleMesh->GetSocketTransform(TEXT("FirePos"));
+		GetWorld()->SpawnActor<ABulletActor>(RifleBulletFactory, firePos);
+	}
+	else if (CurrentWeapon == EPlayerWeaponState::Sniper) {
+		FTransform firePos = SniperMesh->GetSocketTransform(TEXT("FirePos"));
+		GetWorld()->SpawnActor<ABulletActor>(SniperBulletFactory, firePos);
+	}
+	else {
+		// No Weapon: Punch
+	}
 }
 
 // Use Scope of Equiped Gun: Click Right Mouse Button
