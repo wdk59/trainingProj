@@ -4,6 +4,7 @@
 #include "Weapon/BulletActor.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "../Enemy/EnemyCharacter.h"
 
 // Sets default values
 ABulletActor::ABulletActor()
@@ -13,7 +14,7 @@ ABulletActor::ABulletActor()
 
 	// Collision
 	CollisionComp = CreateDefaultSubobject<USphereComponent>(TEXT("CollisionComp"));
-	CollisionComp->SetCollisionProfileName(TEXT("BlockAll"));
+	CollisionComp->SetCollisionProfileName(TEXT("OverlapAll"));
 	RootComponent = CollisionComp;
 
 	// Mesh
@@ -31,17 +32,35 @@ ABulletActor::ABulletActor()
 	MovementComp->bShouldBounce = true;
 	MovementComp->Bounciness = 0.3f;
 
-	SetLifeSpan(lifeSpan);
+	SetLifeSpan(3.f);
 }
 
 // Called when the game starts or when spawned
 void ABulletActor::BeginPlay()
 {
 	Super::BeginPlay();
+
+	CollisionComp->OnComponentBeginOverlap.AddDynamic(this, &ABulletActor::OnOverlapBegin);
 }
 
 // Called every frame
 void ABulletActor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+}
+
+void ABulletActor::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	UE_LOG(LogTemp, Warning, TEXT("hit"));
+	OnProjectileHit(OtherActor);
+}
+
+void ABulletActor::OnProjectileHit(AActor* hitActor)
+{
+	if (hitActor == GetOwner())
+		return;
+
+	if (Cast<AEnemyCharacter>(hitActor)) {
+		Cast<AEnemyCharacter>(hitActor)->OnTakeDamage(damage);
+	}
 }
